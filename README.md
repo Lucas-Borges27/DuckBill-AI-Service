@@ -1,63 +1,95 @@
-# 🦆 DuckBill AI - Classificação Inteligente de Despesas
+# DuckBill AI Service
 
-O **DuckBill** é um ecossistema de gestão financeira voltado para o público jovem. Este repositório contém o **Motor de IA**, responsável por automatizar a categorização de gastos através de Processamento de Linguagem Natural (NLP).
+Motor de IA do ecossistema DuckBill. Responsável por categorizar despesas automaticamente e responder perguntas financeiras com contexto do usuário.
 
-## 🚀 Sobre a Sprint 3
-Nesta etapa, focamos na inteligência preditiva e na portabilidade da solução:
-* **IA:** Modelo de Machine Learning (Random Forest + TF-IDF) para classificação de texto.
-* **Backend:** API REST desenvolvida em Flask.
-* **DevOps:** Containerização da aplicação com Docker e disponibilização no Docker Hub.
+## O que faz
 
----
+| Endpoint | Função |
+|---|---|
+| `POST /predict` | Classifica uma descrição de despesa em categoria (TF-IDF + Logistic Regression) |
+| `POST /batch-predict` | Classifica até 100 descrições em lote |
+| `POST /chat` | Chat financeiro com contexto do usuário (despesas, carteira, metas). Busca web automática para perguntas sobre mercado/investimentos |
+| `GET /health` | Health check do serviço e do modelo |
+| `GET /model-info` | Informações técnicas do modelo |
+| `GET /categories` | Lista as 12 categorias suportadas |
 
-## 📸 Evidências de Execução
+## Modelo de IA
 
-### 1. Treinamento e Acurácia do Modelo
-O modelo foi treinado utilizando uma base de dados de transações bancárias, alcançando um alto índice de confiança.
-![Acurácia do Modelo](./evidencias/evidenciaAcuracia.png)
+- **Algoritmo:** Regressão Logística com `class_weight=balanced`
+- **Vetorizador:** TF-IDF
+- **Treinamento:** notebook `notebooks/CategorizacaoDuckBill.ipynb`
+- **Arquivo:** `src/modelo_categorizador_bancario.pkl`
+- **Acurácia:** veja `evidencias/evidenciaAcuracia.png`
 
-### 2. API em Funcionamento (Teste de Integração)
-Demonstração da API recebendo uma descrição de gasto e retornando a categoria e o nível de confiança via JSON.
-![Teste Postman](./evidencias/evidenciaRequisicao.png)
+## Integração com o app mobile
 
-### 3. Containerização Docker
-O serviço está isolado em um container, garantindo que as dependências (scikit-learn, flask) funcionem em qualquer ambiente.
-![Docker PS](./evidencias/evidenciaDisponibilidade.png)
+O app React Native (`sc-1-duckbill`) consome esta API em dois pontos:
 
----
+1. **Tela de nova despesa** — ao digitar a descrição, chama `/predict` e exibe sugestão de categoria
+2. **Chat DuckBill AI** — chama `/chat` com o contexto completo do usuário (despesas, carteira, metas)
 
-## 🛠️ Tecnologias Utilizadas
-* **Linguagem:** Python 3.11
-* **IA/ML:** Scikit-Learn, Pandas, Joblib
-* **Web:** Flask, Gunicorn
-* **Infra:** Docker, Docker Compose
+## Como rodar
 
----
+### Docker Hub (mais rápido)
 
-## 📦 Como rodar o projeto
-
-Você pode rodar a aplicação diretamente do **Docker Hub** sem precisar configurar o ambiente Python localmente:
-
-1. **Baixe e execute o container:**
 ```bash
-docker run -p 5000:5000 brunocsoares/categorizacaoduckbill:latest
+docker run -d -p 5000:5000 borgexxx/duckbill-ai-service:latest
 ```
 
-2. **Teste a API:**
-Envie um POST para http://localhost:5000/predict com o corpo:
+### Build local
+
 ```bash
-{
-  "description": "McDonalds Big Mac"
-}
+# A partir da raiz DuckBill-AI-Service/
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
----
+### Ecossistema completo (Java + IA juntos)
 
-👥 Integrantes
+```bash
+# A partir da raiz Sprint4/
+docker compose up -d --build
+```
 
-Bruno Carlos Soares - RM 559250
+### Python direto (sem Docker)
 
-Lucas Borges de Souza - RM 560027
+```bash
+cd src/
+pip install -r ../docker/requirements.txt
+python appClassificacao.py
+```
 
-Pedro Henrique da Silva - RM 560393
+## Variáveis de ambiente
 
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `PORT` | `5000` | Porta do servidor |
+| `MODEL_PATH` | `modelo_categorizador_bancario.pkl` | Caminho do modelo |
+| `WEB_SEARCH_ENABLED` | `true` | Habilita busca web no chat |
+| `WEB_SEARCH_MAX_RESULTS` | `5` | Máximo de resultados web |
+| `LLM_BASE_URL` | *(vazio)* | URL de Ollama/OpenAI para respostas via LLM |
+| `LLM_MODEL` | `llama3` | Modelo LLM a usar |
+| `LLM_API_KEY` | *(vazio)* | API key (se necessário) |
+| `LLM_TIMEOUT_SECONDS` | `20` | Timeout da chamada LLM |
+
+## Testes
+
+```bash
+cd DuckBill-AI-Service/
+python -m pytest tests/test_api.py -v
+```
+
+## Evidências
+
+- `evidencias/evidenciaAcuracia.png` — acurácia do modelo treinado
+- `evidencias/evidenciaRequisicao.png` — teste de requisição via Postman
+- `evidencias/evidenciaDisponibilidade.png` — container Docker em execução
+
+## Documentação completa da API
+
+Ver `docs/API_DOCUMENTATION.md`
+
+## Autores
+
+- Bruno Carlos Soares — RM 559250
+- Lucas Borges de Souza — RM 560027
+- Pedro Henrique da Silva — RM 560393
